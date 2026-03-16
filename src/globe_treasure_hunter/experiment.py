@@ -28,9 +28,8 @@ def run_one(
     n: int = 8000,
     K_sae: int = 60,
     pair_soft_eps: float = 1e-6,
-    d_max: float = 1.0,    # ### CHANGED ### default now 1.0 (depth in [0,1])
-    R_task: float = 0.75,
-    ridge_lam_c3: float = 1e-3,   # NEW
+    d_max: float = 1.0,    
+    R_task: float = 0.75,    
 ):
     # Force concept dimensionality: (c1,c2 known; c3 unknown)
     k_total = 3
@@ -105,47 +104,6 @@ def run_one(
     Z_f = fisher_cosine_self(Wc, F)
     Z_e = euclid_cosine_self(Wc)
 
-    # ============================================================
-    # NEW: C3 prediction from frustrated atoms vs matched non-frustrated atoms
-    # ============================================================
-
-    # -------------------------------
-    # PATCH: matched-min sampling
-    # -------------------------------
-    # OLD behavior: if n_frust > n_nonfrust, non_frust_idx becomes empty,
-    # leading to constant-mean baseline (R^2 ~ 0) for "non-frust".
-    #
-    # NEW behavior: use m = min(n_frust, n_nonfrust) and sample m from each side,
-    # so both regressions have the same number of features.
-    frust_idx_full = _select_frustrated_atoms_pair12(S_f, Z_f, tiny=1e-12)
-    n_frust_full = int(frust_idx_full.size)
-
-    all_idx = np.arange(D.shape[0], dtype=np.int64)
-    non_frust_pool = np.setdiff1d(all_idx, frust_idx_full, assume_unique=False)
-    n_nonfrust_pool = int(non_frust_pool.size)
-
-    rng_atoms = np.random.default_rng(seed + 99991)
-    m_match = int(min(n_frust_full, n_nonfrust_pool))
-
-    if m_match > 0:
-        frust_idx = rng_atoms.choice(frust_idx_full, size=m_match, replace=False)
-        non_frust_idx = rng_atoms.choice(non_frust_pool, size=m_match, replace=False)
-    else:
-        frust_idx = np.array([], dtype=np.int64)
-        non_frust_idx = np.array([], dtype=np.int64)
-
-    PhiF_tr = _project_X_onto_atoms(X_tr, D, frust_idx)
-    PhiF_te = _project_X_onto_atoms(X_te, D, frust_idx)
-    PhiN_tr = _project_X_onto_atoms(X_tr, D, non_frust_idx)
-    PhiN_te = _project_X_onto_atoms(X_te, D, non_frust_idx)
-
-    # Ridge predictions
-    yhatF_te, _ = _ridge_predict(PhiF_tr, C3_tr, PhiF_te, lam=ridge_lam_c3)
-    yhatN_te, _ = _ridge_predict(PhiN_tr, C3_tr, PhiN_te, lam=ridge_lam_c3)
-
-    C3_mse_frust, C3_r2_frust = _mse_r2(C3_te, yhatF_te)
-    C3_mse_nonfrust, C3_r2_nonfrust = _mse_r2(C3_te, yhatN_te)
-
     # (7) pair frustration metrics
     mf = metrics_from_S_trimmed(S_f)
     me = metrics_from_S_trimmed(S_e)
@@ -209,20 +167,6 @@ def run_one(
         "Cov_frob_rel": float(cov_diff["frob_rel"]),
         "Corr_frob_abs": float(corr_diff["frob_abs"]),
         "Corr_frob_rel": float(corr_diff["frob_rel"]),
-
-        # NEW: C3 prediction from SAE projections (with matched-min sampling)
-        "n_frust_atoms_full": int(n_frust_full),      # total frust atoms found
-        "n_nonfrust_pool": int(n_nonfrust_pool),      # total non-frust available
-        "n_atoms_matched": int(m_match),              # used on EACH side
-
-        # Backwards-compatible key (now means "USED frust atoms", not "ALL frust atoms")
-        "n_frust_atoms": int(m_match),
-
-        "C3_ridge_lam": float(ridge_lam_c3),
-        "C3_mse_frust_atoms": float(C3_mse_frust),
-        "C3_r2_frust_atoms": float(C3_r2_frust),
-        "C3_mse_nonfrust_atoms": float(C3_mse_nonfrust),
-        "C3_r2_nonfrust_atoms": float(C3_r2_nonfrust),
     }
 
 def run_sweep(
@@ -238,9 +182,8 @@ def run_sweep(
     n=8000,
     K_sae=60,
     pair_soft_eps=1e-6,
-    d_max=1.0,        # ### CHANGED ### default now 1.0
+    d_max=1.0,        
     R_task=0.75,
-    ridge_lam_c3=1e-3,
 ):
     rows = []
     total = len(scenarios) * len(seeds)
@@ -266,7 +209,6 @@ def run_sweep(
                 pair_soft_eps=pair_soft_eps,
                 d_max=d_max,
                 R_task=R_task,
-                ridge_lam_c3=ridge_lam_c3,
             )
             rows.append(out)
 
@@ -275,8 +217,6 @@ def run_sweep(
                 f"[{t:03d}/{total:03d}] {sc_name:3s} seed={out['seed']:2d} keep={out['F_keep_n']:4d} | "
                 f"bb={out['bb_acc']:.3f} cbm={out['cbm_acc']:.3f} mse={out['cbm_mse']:.3f} | "
                 f"Gamma_F(raw_mean)={out['F_pair_raw_mean']:.4f} | "
-                f"nF(full/match)={out['n_frust_atoms_full']:2d}/{out['n_atoms_matched']:2d} "
-                f"C3R2(F/N)={out['C3_r2_frust_atoms']:.3f}/{out['C3_r2_nonfrust_atoms']:.3f}"
             )
 
     return rows
@@ -302,20 +242,7 @@ def summarize(rows):
         bb_mean, bb_sd = _stats([r["bb_acc"] for r in subset])
         cbm_mean, cbm_sd = _stats([r["cbm_acc"] for r in subset])
 
-        # "n_frust_atoms" now means matched/used atoms (see patch).
-        nF_mean, nF_sd = _stats([r["n_frust_atoms"] for r in subset])
-        c3F_mean, c3F_sd = _stats([r["C3_r2_frust_atoms"] for r in subset])
-        c3N_mean, c3N_sd = _stats([r["C3_r2_nonfrust_atoms"] for r in subset])
-
-        # extra bookkeeping summaries (optional)
-        nFfull_mean, nFfull_sd = _stats([r.get("n_frust_atoms_full", np.nan) for r in subset])
-        nMatch_mean, nMatch_sd = _stats([r.get("n_atoms_matched", np.nan) for r in subset])
-
         print(f"\n=== {name} (n_runs={len(subset)}) ===")
         print(f"BB acc                  : {bb_mean:.3f} ± {bb_sd:.3f}")
         print(f"CBM acc                 : {cbm_mean:.3f} ± {cbm_sd:.3f}")
         print(f"Gamma_F (raw mean)      : {gf_mean:.4f} ± {gf_sd:.4f}")
-        print(f"# frust atoms (FULL)     : {nFfull_mean:.2f} ± {nFfull_sd:.2f}")
-        print(f"# atoms matched (USED)   : {nMatch_mean:.2f} ± {nMatch_sd:.2f}")
-        print(f"C3 R^2 (frust atoms)     : {c3F_mean:.3f} ± {c3F_sd:.3f}")
-        print(f"C3 R^2 (non-frust match) : {c3N_mean:.3f} ± {c3N_sd:.3f}")
