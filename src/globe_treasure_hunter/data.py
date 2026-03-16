@@ -2,10 +2,6 @@
 Flat vs Spherical "Earth" Concept-Frustration Simulation
 ========================================================
 
-This FULL script runs end-to-end.
-
-It implements YOUR NEW GEOMETRY + CONCEPTS + TASK:
-
 SPHERE (scenario=1):
   u ~ Unif(S^2)
   d ~ Unif[0,d_max)
@@ -16,12 +12,11 @@ CYLINDER (scenario=0):
   d ~ Unif[0,d_max)
   p = (x_u, y_u, -d)
 
-Concepts (UPDATED; surface-parallel distances, depth-restricted):
+Concepts (surface-parallel distances to NP and SP, and depth)
   - We restrict depth to d in [0, 1] via d_max=1.0.
   - Cylinder (disk at z=-d): "parallel-to-surface" distance is straight-line distance IN THE PLANE z=-d:
         C1 = ||(x,y) - (0, +1)||_2
         C2 = ||(x,y) - (0, -1)||_2
-    (equivalently distance to (0,±1,-d) along the disk; z cancels)
   - Sphere (sphere of radius r=1-d): "parallel-to-surface" distance is GEODESIC distance on that sphere:
         r = 1 - d
         North pole at depth d: N_d = (0, +r, 0)
@@ -30,35 +25,14 @@ Concepts (UPDATED; surface-parallel distances, depth-restricted):
         C2 = r * arccos( (p·S_d) / r^2 ) = r * arccos(-u_y)
   - C3 = d (unknown concept)
 
-Task (unchanged, both):
+Task:
   y = 1{ ||p - E||_2 < R_task }, where E=(1,0,0)
 
-NEW ADDITION:
-  - Identify "frustrated" SAE atoms (for the known pair C1,C2) using Fisher geometry:
-        j is frustrated iff sign(Z_12) != sign(S_1j * S_2j) and S_1j*S_2j != 0
-  - Predict C3 from projections of a (=X) onto:
-        (i) all frustrated atoms
-        (ii) a matched number of randomly chosen non-frustrated atoms
-    using ridge regression, report test MSE and R^2.
-
-PATCH (2026-02-10):
-  - Matched-min sampling for C3 regression baseline:
-      Use m = min(#frustrated, #non-frustrated) atoms on EACH side
-      (prevents non-frust set from becoming empty when #frustrated > K/2).
-  - Added bookkeeping fields:
-      n_frust_atoms_full, n_nonfrust_pool, n_atoms_matched
-  - Updated progress print to show nF(full/match).
-"""
-
 import numpy as np
-
-
 
 NORTH   = np.array([0.0,  1.0, 0.0], dtype=np.float32)
 SOUTH   = np.array([0.0, -1.0, 0.0], dtype=np.float32)
 EQUATOR = np.array([1.0,  0.0, 0.0], dtype=np.float32)
-
-
 
 def sample_uniform_disk(n: int, rng: np.random.Generator):
     """Uniform samples over the unit disk via polar coordinates."""
@@ -75,15 +49,14 @@ def sample_uniform_sphere_directions(n: int, rng: np.random.Generator):
     return v
 
 def sample_depth(n: int, rng: np.random.Generator, *, d_max: float = 1.0) -> np.ndarray:
-    """d ~ Unif[0, d_max).  ### CHANGED ### default d_max is now 1.0 (restrict depth to [0,1])."""
+    """d ~ Unif[0, d_max).  
     return rng.uniform(0.0, float(d_max), size=n).astype(np.float32)
 
 def generate_sphere_dig_concepts(n: int, seed: int, *, d_max: float = 1.0, R: float = 0.75):
     """
     Sphere setup:
       u ~ Unif(S^2), d ~ Unif[0,d_max), p=(1-d)u
-
-    Concepts:  ### CHANGED ###
+    Concepts:
       Let r = 1 - d (sphere radius at depth d).
       Define "surface-parallel" distances as GEODESIC distances on the radius-r sphere to:
         N_d = (0, +r, 0), S_d = (0, -r, 0).
@@ -91,17 +64,15 @@ def generate_sphere_dig_concepts(n: int, seed: int, *, d_max: float = 1.0, R: fl
         C1 = r * arccos( (p·N_d)/r^2 ) = r * arccos(u_y)
         C2 = r * arccos( (p·S_d)/r^2 ) = r * arccos(-u_y)
       C3 = d
-
-    Task (unchanged):
+    Task:
       y = 1{ ||p - EQUATOR||_2 < R }
     """
     rng = np.random.default_rng(seed)
-    u = sample_uniform_sphere_directions(n, rng)          # (n,3), ||u||=1
-    d = sample_depth(n, rng, d_max=d_max)                 # (n,), now in [0,1)
-    r = (1.0 - d).astype(np.float32)                      # (n,)  ### CHANGED ###
-    P = r[:, None] * u                                    # (n,3)
+    u = sample_uniform_sphere_directions(n, rng)          
+    d = sample_depth(n, rng, d_max=d_max)                 
+    r = (1.0 - d).astype(np.float32)                      
+    P = r[:, None] * u                                    
 
-    # ### CHANGED ### Geodesic distances on radius-r sphere:
     # Since (p·N_d)/r^2 = u_y and (p·S_d)/r^2 = -u_y
     uy = u[:, 1].astype(np.float32)
     uy = np.clip(uy, -1.0, 1.0)
@@ -121,7 +92,7 @@ def generate_cylinder_dig_concepts(n: int, seed: int, *, d_max: float = 1.0, R: 
     Cylinder setup:
       (x_u,y_u) ~ Unif(unit disk), d ~ Unif[0,d_max), p=(x_u,y_u,-d)
 
-    Concepts:  ### CHANGED ###
+    Concepts:
       Define "surface-parallel" distances on the disk plane z=-d to points:
         N_d = (0, +1, -d), S_d = (0, -1, -d).
       The intrinsic (geodesic) distance on the plane equals the straight-line distance in (x,y):
@@ -129,7 +100,7 @@ def generate_cylinder_dig_concepts(n: int, seed: int, *, d_max: float = 1.0, R: 
         C2 = sqrt( (x-0)^2 + (y+1)^2 )
       C3 = d
 
-    Task (unchanged):
+    Task:
       y = 1{ ||p - EQUATOR||_2 < R }
     """
     rng = np.random.default_rng(seed)
@@ -139,7 +110,7 @@ def generate_cylinder_dig_concepts(n: int, seed: int, *, d_max: float = 1.0, R: 
 
     P = np.stack([x, y, z], axis=1).astype(np.float32)
 
-    # ### CHANGED ### Planar distances on disk at fixed depth (z cancels):
+    # Planar distances on disk at fixed depth (z cancels):
     c1 = np.sqrt((x * x) + (y - 1.0) * (y - 1.0)).astype(np.float32)
     c2 = np.sqrt((x * x) + (y + 1.0) * (y + 1.0)).astype(np.float32)
     c3 = d.astype(np.float32)
@@ -153,7 +124,6 @@ def generate_cylinder_dig_concepts(n: int, seed: int, *, d_max: float = 1.0, R: 
 def concepts_to_signal(C: np.ndarray, *, r: int = 64, sigma_x: float = 0.3, seed: int = 0):
     """
     X = C @ A^T + eps
-
     Treat X as the model input / activation proxy (a).
     """
     rng = np.random.default_rng(seed)
