@@ -28,23 +28,74 @@ The experiments in this repository explore this phenomenon across several settin
 - A natural language task (sarcasm detection)
 - A computer vision task (CUB bird dataset)
 
-These experiments illustrate how incomplete concept ontologies can lead to structural misalignment between human concepts and machine-learned representations.
-
 ---
 
 ## Repository Structure
 
-- **notebooks/**  
-  Jupyter notebooks implementing the main experiments.
+The repository is organised as follows:
 
-- **results/**  
-  Output CSV files containing experiment results and metrics.
+- `notebooks/`  
+  Jupyter notebooks implementing the main experiments (lightweight runners).
 
-- **figures/**  
-  Figures used in the manuscript.
+- `src/`  
+  Modularised code for each experiment, including:
+  - data generation / loading  
+  - model definitions  
+  - training routines  
+  - evaluation metrics  
+  - experiment pipelines  
 
-- **src/**  
-  Optional reusable code modules.
+- `data/`  
+  External datasets (download separately, see below).
+
+- `results/`  
+  Output CSV files containing experiment results and metrics used in the manuscript.
+---
+
+## Data Setup (Important)
+
+This repository does **not** include large datasets. Please download them manually as follows.
+
+### 1. Sarcasm Headlines Dataset (NLP)
+
+Download from Kaggle:  
+https://www.kaggle.com/datasets/rmisra/news-headlines-dataset-for-sarcasm-detection
+
+Reference:  
+Misra, R. (2018). *News Headlines Dataset for Sarcasm Detection*.
+
+After downloading, place the files here:
+
+
+data/headlines_data/
+  Sarcasm_Headlines_Dataset.json
+  Sarcasm_Headlines_Dataset_v2.json
+
+
+---
+
+### 2. CUB-200-2011 Dataset (Vision)
+
+Download from Caltech:  
+https://data.caltech.edu/records/65de6-vp158
+
+Reference:  
+Wah, C., Branson, S., Welinder, P., Perona, P., & Belongie, S. (2011).  
+*The Caltech-UCSD Birds-200-2011 Dataset.*
+
+After downloading, extract and place the directory:
+
+
+data/CUB_200_2011/
+
+
+So your structure should be:
+
+
+data/
+  CUB_200_2011/
+  headlines_data/
+
 
 ---
 
@@ -52,46 +103,44 @@ These experiments illustrate how incomplete concept ontologies can lead to struc
 
 ### 1. Globe / Treasure Hunter Toy Environment
 
-A geometric environment used to illustrate concept misalignment.
+A geometric environment illustrating concept misalignment and frustration.
 
-Notebook: notebooks/01_globe_treasure_hunter.ipynb
+Notebook:  
+`notebooks/01_globe_treasure_hunter.ipynb`
 
 ---
 
 ### 2. Synthetic Concept Geometry Simulations
 
-Explores theoretical behaviour of concept-based models under controlled geometric structures.
+Controlled simulations studying alignment between concepts, representations, and task structure.
 
-Notebook: notebooks/02_synthetic_simulations.ipynb
-
+Notebook:  
+`notebooks/02_synthetic_simulations.ipynb`
 
 ---
 
 ### 3. Sarcasm Detection (NLP Task)
 
-Uses language model embeddings to study concept frustration in a natural language setting.
+Uses language model embeddings to study concept frustration in natural language.
 
-Concepts represent interpretable linguistic attributes, while embeddings capture richer semantic structure.
-
-Notebook: notebooks/03_sarcasm_task.ipynb
-
+Notebook:  
+`notebooks/03_sarcasm_task.ipynb`
 
 ---
 
-### 4. CUB Bird Classification
+### 4. CUB Bird Classification (Vision Task)
 
-Uses vision model embeddings to study concept frustration in a computer vision setting.
+Uses vision model embeddings to study concept frustration in a vision setting.
 
-Concepts represent interpretable visual attributes, while embeddings capture richer semantic structure.
-
-Notebook: notebooks/04_cub_gull_tern.ipynb
-
+Notebook:  
+`notebooks/04_cub_gull_tern.ipynb`
 
 ---
 
 ## Setup
 
 ### 1. Clone the repository
+
 
 git clone https://github.com/CRSBanerji/concept-frustration.git
 
@@ -101,11 +150,14 @@ cd concept-frustration
 ### 2. Create environment
 
 Recommended: Python ≥ 3.9
+
+
 python -m venv venv
 source venv/bin/activate
 
 
 ### 3. Install dependencies
+
 
 pip install -r requirements.txt
 
@@ -118,14 +170,16 @@ Experiments are organised as Jupyter notebooks.
 
 Recommended order:
 
-1. Globe / toy geometry task
-2. Synthetic simulations
-3. Sarcasm NLP task
-4. CUB vision task
+1. Globe / toy geometry task  
+2. Synthetic simulations  
+3. Sarcasm NLP task  
+4. CUB vision task  
 
 Run with:
 
+
 jupyter notebook
+
 
 ---
 
@@ -133,20 +187,51 @@ jupyter notebook
 
 Example result tables are included in the `results/` directory.
 
-These correspond to metrics reported in the manuscript, including:
+Outputs include:
 
-- black-box model accuracy
-- concept bottleneck model accuracy
-- frustration metrics
-- alignment metrics
+- black-box model accuracy  
+- concept bottleneck model accuracy  
+- frustration metrics  
 
+### Frustration Metrics
+
+The repository reports the primary frustration metrics used in the paper as:
+
+- `F_pair_raw_mean` → corresponds to **γ_F** (Fisher-based frustration)  
+- `E_pair_raw_mean` → corresponds to **γ_E** (Euclidean-based frustration)  
+
+These are computed as pairwise frustration measures between learned concept representations.
+
+In addition, the code outputs **alternative and auxiliary variants** of these metrics, including:
+
+- normalised versions  
+- trimmed / thresholded variants  
+- geometry-specific comparisons  
+
+These additional metrics are provided to support robustness analyses and ablations.
+
+### Output Locations
+
+Each experiment writes results to:
+
+results/<task_name>/
+
+
+For example:
+
+results/Globe/
+results/Synthetic/
+results/Sarcasm/
+results/CUB/
 ---
 
 ## Reproducibility Notes
 
-This repository contains research code accompanying the manuscript. Some notebooks are structured for exploratory analysis and may prioritise clarity of experimentation over software modularity.
+- Datasets are loaded directly from `data/` (no caching is used)
+- Results are generated deterministically given seeds
+- Notebooks act as experiment entry points; core logic lives in `src/`
 
-Key experiment outputs used in the paper are included as CSV files in the `results/` directory.
+This design ensures clarity and reproducibility for research use.
 
 ---
 
@@ -161,5 +246,8 @@ You are free to use, modify, and distribute the code with appropriate attributio
 ## Citation
 
 If you use this repository or build on this work, please cite:
+
 **Aligning Human Concepts and Machine Representations in Interpretable AI**  
 Enrico Parisini, Christopher Soelistyo, Ahab Isaac, Alessandro Barp, Christopher R. S. Banerji
+
+---
