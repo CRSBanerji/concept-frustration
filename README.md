@@ -52,9 +52,9 @@ The repository is organised as follows:
   Output CSV files containing experiment results and metrics used in the manuscript.
 ---
 
-## Data Setup (Important)
+## Data Setup
 
-This repository does **not** include large datasets. Please download them manually as follows.
+This repository does **not** include the large datasets. Please download them manually as follows.
 
 ### 1. Sarcasm Headlines Dataset (NLP)
 
@@ -67,9 +67,10 @@ Misra, R. (2018). *News Headlines Dataset for Sarcasm Detection*.
 After downloading, place the files here:
 
 
-data/headlines_data/
-  Sarcasm_Headlines_Dataset.json
-  Sarcasm_Headlines_Dataset_v2.json
+`data/headlines_data/`
+ 
+- `Sarcasm_Headlines_Dataset.json`
+- `Sarcasm_Headlines_Dataset_v2.json`
 
 
 ---
@@ -86,15 +87,15 @@ Wah, C., Branson, S., Welinder, P., Perona, P., & Belongie, S. (2011).
 After downloading, extract and place the directory:
 
 
-data/CUB_200_2011/
+`data/CUB_200_2011/`
 
 
 So your structure should be:
 
 
-data/
-  CUB_200_2011/
-  headlines_data/
+`data/`
+- `CUB_200_2011/`
+- `headlines_data/`
 
 
 ---
@@ -142,24 +143,19 @@ Notebook:
 ### 1. Clone the repository
 
 
-git clone https://github.com/CRSBanerji/concept-frustration.git
+`git clone https://github.com/CRSBanerji/concept-frustration.git`
 
-cd concept-frustration
+`cd concept-frustration`
 
 
 ### 2. Create environment
 
 Recommended: Python ≥ 3.9
 
-
-python -m venv venv
-source venv/bin/activate
-
-
 ### 3. Install dependencies
 
 
-pip install -r requirements.txt
+`pip install -r requirements.txt`
 
 
 ---
@@ -214,15 +210,15 @@ These additional metrics are provided to support robustness analyses and ablatio
 
 Each experiment writes results to:
 
-results/<task_name>/
+`results/<task_name>/`
 
 
 For example:
 
-results/Globe/
-results/Synthetic/
-results/Sarcasm/
-results/CUB/
+- `results/Globe/`
+- `results/Synthetic/`
+- `results/Sarcasm/`
+- `results/CUB/`
 ---
 
 ## Reproducibility Notes
