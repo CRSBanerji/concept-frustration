@@ -204,7 +204,7 @@ In addition, the code outputs **alternative and auxiliary variants** of these me
 - trimmed / thresholded variants  
 - geometry-specific comparisons  
 
-These additional metrics are provided to support robustness analyses and ablations.
+These additional metrics are provided to support exploratory analyses.
 
 ### Output Locations
 
