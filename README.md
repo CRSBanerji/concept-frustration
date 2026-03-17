@@ -219,23 +219,6 @@ For example:
 - `results/Synthetic/`
 - `results/Sarcasm/`
 - `results/CUB/`
----
-
-## Reproducibility Notes
-
-- Datasets are loaded directly from `data/` (no caching is used)
-- Results are generated deterministically given seeds
-- Notebooks act as experiment entry points; core logic lives in `src/`
-
-This design ensures clarity and reproducibility for research use.
-
----
-
-## License
-
-This repository is released under the **MIT License**.
-
-You are free to use, modify, and distribute the code with appropriate attribution.
 
 ---
 
