@@ -8,3 +8,6 @@ transformers>=4.35
 Pillow>=9.5
 jupyter>=1.0
 notebook>=7.0
+protobuf
+tiktoken
+sentencepiece
