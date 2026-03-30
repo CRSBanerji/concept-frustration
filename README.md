@@ -3,7 +3,7 @@
 This repository contains the code, experiments, and selected results for the paper:
 
 **Concept frustration: Aligning Human Concepts and Machine Representations in Interpretable AI**  
-Enrico Parisini, Christopher Soelistyo, Ahab Isaac, Alessandro Barp, Christopher R. S. Banerji
+Enrico Parisini, Christopher J. Soelistyo, Ahab Isaac, Alessandro Barp, Christopher R. S. Banerji
 
 ---
 
@@ -227,6 +227,6 @@ For example:
 If you use this repository or build on this work, please cite:
 
 **Concept frustration: Aligning Human Concepts and Machine Representations in Interpretable AI**  
-Enrico Parisini, Christopher Soelistyo, Ahab Isaac, Alessandro Barp, Christopher R. S. Banerji
+Enrico Parisini, Christopher J. Soelistyo, Ahab Isaac, Alessandro Barp, Christopher R. S. Banerji
 
 ---
